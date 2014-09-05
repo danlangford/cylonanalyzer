@@ -57,7 +57,15 @@ uint32_t ledON = Colors::WHITE, ledOFF = Colors::BLACK;
 
 unsigned long closeCylonEyeUntil=0;
 
+
+String inputString = "";         // a string to hold incoming data
+boolean stringComplete = false;  // whether the string is complete
+
+
 void setup() {
+  
+  setupBT();
+  
   strip.begin();
   //strip.setBrightness(75);
   strip.show();
@@ -65,12 +73,30 @@ void setup() {
   Serial.begin(9600);
   
   pinMode(13, OUTPUT);
+  
+  // reserve 200 bytes for the inputString:
+  inputString.reserve(200);
 }
 
 void loop() {
   
+  // print the string when a newline arrives:
+  if (stringComplete) {
+    //Serial.println(inputString); 
+    if(inputString == "RESET\n") {
+      blink(2);
+      delay(1000);
+      blink(2);
+      //resetFunc();
+    }
+    // clear the string:
+    inputString = "";
+    stringComplete = false;
+    
+  }  
+  
   if( (millis()/1000)%2 == 0 ){
-    digital.write(13, HIGH);
+    digitalWrite(13, HIGH);
   } else {
     digitalWrite(13, LOW);
   }
@@ -197,6 +223,92 @@ void MoveCylon() {
   waitTill = millis() + 10;
 }
 
+
+
+void blink(int x) {
+  for(int i =0;i<x;i++) {
+    digitalWrite(13, HIGH);
+    delay(50);
+    digitalWrite(13, LOW); 
+    delay(50);
+  }
+}
+
+//////////////
+
+
+void(* resetFunc) (void) = 0; //declare reset function @ address 0
+
+void serialEvent() {
+  
+  while (Serial.available()) {
+    // get the new byte:
+    char inChar = (char)Serial.read(); 
+    // add it to the inputString:
+    inputString += inChar;
+    // if the incoming character is a newline, set a flag
+    // so the main loop can do something about it:
+    if (inChar == '\n') {
+      stringComplete = true;
+    } 
+  }
+  
+}
+
+////////////
+
+
+//
+// BLUETOOTH
+//
+
+#define blueToothSerial Serial
+
+void setupBT()
+{
+  
+  
+  blueToothSerial.begin(57600); //Set BluetoothBee BaudRate to default baud rate 38400
+  delay(1000);
+  blink(1);
+  
+  //blueToothSerial.print("\r\n+STBD=57600\r\n");
+  //delay(2);
+  //blink(200000);
+  //delay(99999999);
+  
+  blueToothSerial.print("\r\n+STWMOD=0\r\n");
+  delay(2000);
+  blink(2);
+  
+  blueToothSerial.print("\r\n+STNA=CylonSays2\r\n");
+  delay(2000);
+  blink(3);
+  
+  blueToothSerial.print("\r\n+STAUTO=0\r\n");
+  delay(2000);
+  blink(1);
+  
+  blueToothSerial.print("\r\n+STOAUT=1\r\n");
+  delay(2000);
+  blink(2);
+  
+  blueToothSerial.print("\r\n+STPIN=0000\r\n");
+  delay(2000);
+  blink(3);
+  
+//  blueToothSerial.print("\r\n+LOSSRECONN=0\r\n");
+//  delay(3000);
+  
+  blueToothSerial.print("\r\n+INQ=1\r\n");
+  delay(2000);
+  blink(1);
+  
+  
+  
+    Serial.print("Setup complete");
+ 
+}
 
 
 
